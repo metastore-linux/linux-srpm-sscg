@@ -1,27 +1,29 @@
 %global provider        github
 %global provider_tld    com
-%global project         sgallagher
-%global repo            sscg
+%global project sgallagher
+%global repo sscg
 # https://github.com/sgallagher/sscg
 %global provider_prefix %{provider}.%{provider_tld}/%{project}/%{repo}
 %global import_path     %{provider_prefix}
-%global commit          b994c9eab1d3b1ec4c2470c2955945d5f2937da1
-%global shortcommit     %(c=%{commit}; echo ${c:0:7})
 
-Name:               sscg
-Version:            2.2.0
-Release:            2%{?dist}
-Summary:            Simple SSL certificate generator
-License:            BSD
-URL:                https://%{provider_prefix}
 
-Source0:            https://%{provider_prefix}/releases/download/%{repo}-%{version}/%{repo}-%{version}.tar.gz
+Name:                   sscg
+Version:                2.3.3
+Release:                2%{?dist}
+Summary:                Simple SSL certificate generator
+License:                BSD
+URL:                    https://%{provider_prefix}
 
-BuildRequires:      gcc
-BuildRequires:      libtalloc-devel
-BuildRequires:      openssl-devel
-BuildRequires:      popt-devel
-BuildRequires:      libpath_utils-devel
+Source0:                https://%{provider_prefix}/releases/download/%{repo}-%{version}/%{repo}-%{version}.tar.xz
+
+BuildRequires:          gcc
+BuildRequires:          libtalloc-devel
+BuildRequires:          openssl-devel
+BuildRequires:          libpath_utils-devel
+BuildRequires:          meson
+BuildRequires:          ninja-build
+
+Provides:               bundled(popt) = 1.16
 
 %description
 A utility to aid in the creation of more secure "self-signed"
@@ -36,15 +38,20 @@ false signatures from the service certificate.
 # -------------------------------------------------------------------------------------------------------------------- #
 
 %prep
-%setup -q -n %{name}-%{version}
-
+%autosetup
 
 %build
-%configure
-%make_build
+%meson
+%meson_build
 
 %install
-%make_install
+%meson_install
+
+%check
+
+%ifnarch %{arm}
+%meson_test
+%endif
 
 %files
 %license COPYING
@@ -52,8 +59,29 @@ false signatures from the service certificate.
 %{_bindir}/%{name}
 
 %changelog
-* Sat Dec 16 2017 Kitsune Solar <kitsune.solar@gmail.com> - 2.2.0-2
-- Build from RHEL7
+* Thu Jul 26 2018 Kitsune Solar <kitsune.solar@gmail.com> - 2.3.3-2
+- Build from EL7.
+
+* Fri Feb 02 2018 Stephen Gallagher <sgallagh@redhat.com> - 2.3.3-1
+- Update to 2.3.3
+- Do not overwrite destination files without --force
+
+* Thu Jan 25 2018 Stephen Gallagher <sgallagh@redhat.com> - 2.3.2-1
+- Update to 2.3.2
+- Properly support hostnames up to 64 characters
+- Resolves: rhbz#1535537
+
+* Tue Jan 02 2018 Stephen Gallagher <sgallagh@redhat.com> - 2.3.1-2
+- Skip tests on 32-bit ARM for now
+
+* Tue Jan 02 2018 Stephen Gallagher <sgallagh@redhat.com> - 2.3.1-1
+- Update to 2.3.1
+- Bundle popt 1.16 on older releases like EPEL.
+
+* Mon Dec 18 2017 Stephen Gallagher <sgallagh@redhat.com> - 2.3.0-1
+- Update to 2.3.0
+- Switch to meson build system
+- Add support for non-DNS subjectAlternativeName values (issue #4)
 
 * Thu Sep 21 2017 Stephen Gallagher <sgallagh@redhat.com> - 2.2.0-1
 - Reorder combined PEM file
